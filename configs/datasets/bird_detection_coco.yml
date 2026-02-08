@@ -1,0 +1,20 @@
+metric: COCO
+num_classes: 1
+
+TrainDataset:
+  !COCODataSet
+    image_dir: train/images
+    anno_path: annotations/instances_train.json
+    dataset_dir: BirdDetection.v2-initial-dataset.yolo26
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: valid/images
+    anno_path: annotations/instances_val.json
+    dataset_dir: BirdDetection.v2-initial-dataset.yolo26
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/instances_val.json
+    dataset_dir: BirdDetection.v2-initial-dataset.yolo26
