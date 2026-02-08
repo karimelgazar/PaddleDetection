@@ -70,8 +70,7 @@ def parse_args():
         type=str,
         default=None,
         help=(
-            "Path to auto-generated PaddleDetection COCO dataset yaml. "
-            "Defaults to <repo_root>/configs/datasets/<dataset_name>_coco.yml"
+            "Path to auto-generated PaddleDetection COCO dataset yaml. Defaults to <output_dir>/<dataset_name>_coco.yml"
         ),
     )
     parser.add_argument(
@@ -594,11 +593,10 @@ def main():
     output_dir = Path(args.output_dir).expanduser().resolve() if args.output_dir else dataset_dir / "coco_annotations"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    repo_root = Path(__file__).resolve().parents[1]
     dataset_yaml_path = (
         Path(args.dataset_yaml_path).expanduser().resolve()
         if args.dataset_yaml_path
-        else repo_root / "configs" / "datasets" / "{}_coco.yml".format(dataset_dir.name)
+        else output_dir / "{}_coco.yml".format(dataset_dir.name)
     )
 
     num_workers = args.num_workers if args.num_workers > 0 else (os.cpu_count() or 1)
