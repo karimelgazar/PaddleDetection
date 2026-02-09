@@ -13,6 +13,8 @@ pycocotools
 setuptools
 Pillow
 packaging
+blinker
+scikit-learn
 
 # for MOT evaluation and inference
 lapx
