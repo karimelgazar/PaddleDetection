@@ -1,3 +1,4 @@
+# Core dependencies
 numpy < 2.0
 tqdm
 typeguard
@@ -23,3 +24,6 @@ pyclipper
 
 # for culane data augumetation
 imgaug>=0.4.0
+
+--extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cu118/
+paddlepaddle-gpu==3.2.2
