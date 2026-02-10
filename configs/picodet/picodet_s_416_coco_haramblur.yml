@@ -12,7 +12,7 @@ weights: output/picodet_s_416_coco_haramblur/best_model
 find_unused_parameters: True
 use_ema: true
 epoch: 2000
-snapshot_epoch: 50
+snapshot_epoch: 1
 
 LCNet:
   scale: 0.75
