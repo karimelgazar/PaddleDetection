@@ -18,7 +18,13 @@ python check_setup.py
 # THESE CLI Arguments below will override the ones in the config file, so we can test different settings without changing the config file.
 # Keep LR linear to batch: new_lr = 0.08 * new_bs / 48
 export CUDA_VISIBLE_DEVICES=0
-python tools/train.py -c configs/picodet/picodet_s_416_coco_haramblur.yml -o use_gpu=True worker_num=3 TrainReader.use_shared_memory=False LearningRate.base_lr=0.0133
+mkdir -p logs
+nohup python -u tools/train.py -c configs/picodet/picodet_s_416_coco_haramblur.yml -o use_gpu=True worker_num=3 TrainReader.use_shared_memory=False LearningRate.base_lr=0.10666  > logs/picodet_s_416_$(date +%F_%H-%M-%S).log 2>&1 &
+tail -f logs/picodet_s_416_YYYY-MM-DD_HH-MM-SS.log
+
+# Resume training from a checkpoint:
+nohup python -u tools/train.py -r output/picodet_s_416_coco_haramblur/123.pdparams -c configs/picodet/picodet_s_416_coco_haramblur.yml -o use_gpu=True worker_num=3 TrainReader.use_shared_memory=False LearningRate.base_lr=0.10666  > logs/picodet_s_416_$(date +%F_%H-%M-%S).log 2>&1 &
+
 # python tools/train.py -c configs/picodet/picodet_s_416_coco_haramblur.yml -o use_gpu=True worker_num=0 TrainReader.batch_size=8 TrainReader.use_shared_memory=False LearningRate.base_lr=0.0133
 python tools/train.py \
   -c configs/picodet/picodet_s_320_bird_detection.yml \
