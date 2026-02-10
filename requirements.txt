@@ -13,7 +13,7 @@ pycocotools
 setuptools
 Pillow
 packaging
-blinker
+numba==0.56.4
 scikit-learn
 
 # for MOT evaluation and inference
