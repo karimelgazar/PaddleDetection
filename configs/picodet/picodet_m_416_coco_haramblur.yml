@@ -14,7 +14,7 @@ epoch: 2000
 snapshot_epoch: 50
 
 TrainReader:
-  batch_size: 48
+  batch_size: 24
 
 LearningRate:
   base_lr: 0.08
