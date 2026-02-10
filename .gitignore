@@ -91,3 +91,4 @@ kernel_meta/
 *.DS_Store
 
 BirdDetection.v2-initial-dataset.yolo26/
+*.ipynb
