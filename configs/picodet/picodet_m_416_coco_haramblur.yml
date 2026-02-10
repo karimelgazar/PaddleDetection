@@ -14,7 +14,8 @@ epoch: 2000
 snapshot_epoch: 50
 
 TrainReader:
-  batch_size: 24
+  # best batch size to prevent RTX A4500 GPU out of memory
+  batch_size: 64
 
 LearningRate:
   base_lr: 0.08
