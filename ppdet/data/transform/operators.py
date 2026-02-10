@@ -25,6 +25,7 @@ try:
 except Exception:
     from collections import Sequence
 
+import io
 from numbers import Number, Integral
 
 import uuid
@@ -101,11 +102,22 @@ class BaseOperator(object):
         Returns:
             result (dict): a processed sample
         """
-        if isinstance(sample, Sequence):
-            for i in range(len(sample)):
-                sample[i] = self.apply(sample[i], context)
-        else:
-            sample = self.apply(sample, context)
+        # print("Sample:\n", sample)
+        try:
+            if isinstance(sample, Sequence):
+                for i in range(len(sample)):
+                    sample[i] = self.apply(sample[i], context)
+            else:
+                sample = self.apply(sample, context)
+        except Exception as e:
+            print("="*50)
+            print("Sample:\n", sample)
+            print("sample type: ", type(sample))
+            print("key in sample: ", sample.keys())
+            print("="*50)
+            with open("/workspace/PaddleDetection/image_causing_error.txt", 'w') as fb:
+                fb.write(str(sample))
+            raise e
         return sample
 
     def __str__(self):
@@ -123,22 +135,28 @@ class Decode(BaseOperator):
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
         if 'image' not in sample:
-            with open(sample['im_file'], 'rb') as f:
-                sample['image'] = f.read()
+            image = Image.open(sample['im_file']).convert('RGB')
+            sample['image'] = np.asarray(image)
             if not self.rtn_im_file:
                 sample.pop('im_file')
+        else:
+            try:
+                # 1. Use BytesIO to treat the bytes as a file
+                image_bytes = sample['image']
+                image_buffer = io.BytesIO(image_bytes)
 
-        try:
-            im = sample['image']
-            data = np.frombuffer(im, dtype='uint8')
-            im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
-            if 'keep_ori_im' in sample and sample['keep_ori_im']:
-                sample['ori_image'] = im
-            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-        except:
-            im = sample['image']
+                # 2. Open the image using Pillow
+                image = Image.open(image_buffer).convert('RGB')
 
-        sample['image'] = im
+                # 3. Convert the Pillow image object to a NumPy array
+                im = np.asarray(image)
+                sample['image'] = im
+                if 'keep_ori_im' in sample and sample['keep_ori_im']:
+                    sample['ori_image'] = im
+            except Exception as e:
+                print("Decode image error: ", e)
+        
+        im = sample['image']
         if 'h' not in sample:
             sample['h'] = im.shape[0]
         elif sample['h'] != im.shape[0]:
