@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 
-git clone -b main https://github.com/karimelgazar/PaddleDetection
+# git clone -b main https://github.com/karimelgazar/PaddleDetection
 apt remove python3-blinker
 python -m pip install -U pip setuptools wheel blinker
 python -m pip install -r requirements.txt
+nvidia-smi
+python check_setup.py
 
 # Real install, not --dry-run.
 # python -m pip install --no-cache-dir --force-reinstall \
 #   "paddlepaddle-gpu==3.2.2" \
 #   -i "https://www.paddlepaddle.org.cn/packages/stable/cu118/"
 
-nvidia-smi
-python check_setup.py
 
 # python tools/yolo2coco.py --dataset_dir "$DATASET_DIR"
 
@@ -22,8 +22,6 @@ mkdir -p logs
 nohup python -u tools/train.py -c configs/picodet/picodet_s_416_coco_haramblur.yml -o use_gpu=True worker_num=3 TrainReader.use_shared_memory=False LearningRate.base_lr=0.10666  > logs/picodet_s_416_$(date +%F_%H-%M-%S).log 2>&1 &
 tail -f logs/picodet_s_416_YYYY-MM-DD_HH-MM-SS.log
 
-# Resume training from a checkpoint:
-nohup python -u tools/train.py -r output/picodet_s_416_coco_haramblur/123.pdparams -c configs/picodet/picodet_s_416_coco_haramblur.yml -o use_gpu=True worker_num=3 TrainReader.use_shared_memory=False LearningRate.base_lr=0.10666  > logs/picodet_s_416_$(date +%F_%H-%M-%S).log 2>&1 &
 
 # python tools/train.py -c configs/picodet/picodet_s_416_coco_haramblur.yml -o use_gpu=True worker_num=0 TrainReader.batch_size=8 TrainReader.use_shared_memory=False LearningRate.base_lr=0.0133
 python tools/train.py \
@@ -33,6 +31,12 @@ python tools/train.py \
      TrainDataset.dataset_dir="$DATASET_DIR" \
      EvalDataset.dataset_dir="$DATASET_DIR" \
      TestDataset.dataset_dir="$DATASET_DIR"
+
+# Resume training from a checkpoint:
+nohup python -u tools/train.py -r /workspace/PaddleDetection/output/119.pdparams -c configs/picodet/picodet_s_416_coco_haramblur_big.yml -o use_gpu=True worker_num=16 TrainReader.use_shared_memory=False LearningRate.base_lr=0.426  > logs/picodet_s_416_$(date +%F_%H-%M-%S).log 2>&1 &
+
+# Validation
+python tools/eval.py -c configs/picodet/picodet_s_416_coco_haramblur_big.yml -o use_gpu=True worker_num=16 weights=/workspace/PaddleDetection/output/218.pdparams
 
 BEST_WEIGHTS="output/picodet_s_320_bird_detection/best_model/model.pdparams"
 [ -f "$BEST_WEIGHTS" ] || { echo "Best weights not found: $BEST_WEIGHTS"; exit 1; }
