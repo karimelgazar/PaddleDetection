@@ -12,25 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+from numbers import Integral
 
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
-from paddle.nn import Conv2D, MaxPool2D, AdaptiveAvgPool2D, BatchNorm
-from paddle.nn.initializer import KaimingNormal
-from paddle.regularizer import L2Decay
+from paddle.nn import AdaptiveAvgPool2D, Conv2D, MaxPool2D
 
 from ppdet.core.workspace import register, serializable
-from numbers import Integral
-from ..shape_spec import ShapeSpec
-from ppdet.modeling.ops import channel_shuffle
 from ppdet.modeling.backbones.shufflenet_v2 import ConvBNLayer
+from ppdet.modeling.ops import channel_shuffle
 
-__all__ = ['ESNet']
+from ..shape_spec import ShapeSpec
+
+__all__ = ["ESNet"]
 
 
 def make_divisible(v, divisor=16, min_value=None):
@@ -53,7 +51,8 @@ class SEModule(nn.Layer):
             stride=1,
             padding=0,
             weight_attr=ParamAttr(),
-            bias_attr=ParamAttr())
+            bias_attr=ParamAttr(),
+        )
         self.conv2 = Conv2D(
             in_channels=channel // reduction,
             out_channels=channel,
@@ -61,7 +60,8 @@ class SEModule(nn.Layer):
             stride=1,
             padding=0,
             weight_attr=ParamAttr(),
-            bias_attr=ParamAttr())
+            bias_attr=ParamAttr(),
+        )
 
     def forward(self, inputs):
         outputs = self.avg_pool(inputs)
@@ -73,12 +73,7 @@ class SEModule(nn.Layer):
 
 
 class InvertedResidual(nn.Layer):
-    def __init__(self,
-                 in_channels,
-                 mid_channels,
-                 out_channels,
-                 stride,
-                 act="relu"):
+    def __init__(self, in_channels, mid_channels, out_channels, stride, act="relu"):
         super(InvertedResidual, self).__init__()
         self._conv_pw = ConvBNLayer(
             in_channels=in_channels // 2,
@@ -87,7 +82,8 @@ class InvertedResidual(nn.Layer):
             stride=1,
             padding=0,
             groups=1,
-            act=act)
+            act=act,
+        )
         self._conv_dw = ConvBNLayer(
             in_channels=mid_channels // 2,
             out_channels=mid_channels // 2,
@@ -95,7 +91,8 @@ class InvertedResidual(nn.Layer):
             stride=stride,
             padding=1,
             groups=mid_channels // 2,
-            act=None)
+            act=None,
+        )
         self._se = SEModule(mid_channels)
 
         self._conv_linear = ConvBNLayer(
@@ -105,13 +102,11 @@ class InvertedResidual(nn.Layer):
             stride=1,
             padding=0,
             groups=1,
-            act=act)
+            act=act,
+        )
 
     def forward(self, inputs):
-        x1, x2 = paddle.split(
-            inputs,
-            num_or_sections=[inputs.shape[1] // 2, inputs.shape[1] // 2],
-            axis=1)
+        x1, x2 = paddle.split(inputs, num_or_sections=[inputs.shape[1] // 2, inputs.shape[1] // 2], axis=1)
         x2 = self._conv_pw(x2)
         x3 = self._conv_dw(x2)
         x3 = paddle.concat([x2, x3], axis=1)
@@ -122,12 +117,7 @@ class InvertedResidual(nn.Layer):
 
 
 class InvertedResidualDS(nn.Layer):
-    def __init__(self,
-                 in_channels,
-                 mid_channels,
-                 out_channels,
-                 stride,
-                 act="relu"):
+    def __init__(self, in_channels, mid_channels, out_channels, stride, act="relu"):
         super(InvertedResidualDS, self).__init__()
 
         # branch1
@@ -138,7 +128,8 @@ class InvertedResidualDS(nn.Layer):
             stride=stride,
             padding=1,
             groups=in_channels,
-            act=None)
+            act=None,
+        )
         self._conv_linear_1 = ConvBNLayer(
             in_channels=in_channels,
             out_channels=out_channels // 2,
@@ -146,7 +137,8 @@ class InvertedResidualDS(nn.Layer):
             stride=1,
             padding=0,
             groups=1,
-            act=act)
+            act=act,
+        )
         # branch2
         self._conv_pw_2 = ConvBNLayer(
             in_channels=in_channels,
@@ -155,7 +147,8 @@ class InvertedResidualDS(nn.Layer):
             stride=1,
             padding=0,
             groups=1,
-            act=act)
+            act=act,
+        )
         self._conv_dw_2 = ConvBNLayer(
             in_channels=mid_channels // 2,
             out_channels=mid_channels // 2,
@@ -163,7 +156,8 @@ class InvertedResidualDS(nn.Layer):
             stride=stride,
             padding=1,
             groups=mid_channels // 2,
-            act=None)
+            act=None,
+        )
         self._se = SEModule(mid_channels // 2)
         self._conv_linear_2 = ConvBNLayer(
             in_channels=mid_channels // 2,
@@ -172,7 +166,8 @@ class InvertedResidualDS(nn.Layer):
             stride=1,
             padding=0,
             groups=1,
-            act=act)
+            act=act,
+        )
         self._conv_dw_mv1 = ConvBNLayer(
             in_channels=out_channels,
             out_channels=out_channels,
@@ -180,7 +175,8 @@ class InvertedResidualDS(nn.Layer):
             stride=1,
             padding=1,
             groups=out_channels,
-            act="hard_swish")
+            act="hard_swish",
+        )
         self._conv_pw_mv1 = ConvBNLayer(
             in_channels=out_channels,
             out_channels=out_channels,
@@ -188,7 +184,8 @@ class InvertedResidualDS(nn.Layer):
             stride=1,
             padding=0,
             groups=1,
-            act="hard_swish")
+            act="hard_swish",
+        )
 
     def forward(self, inputs):
         x1 = self._conv_dw_1(inputs)
@@ -207,11 +204,13 @@ class InvertedResidualDS(nn.Layer):
 @register
 @serializable
 class ESNet(nn.Layer):
-    def __init__(self,
-                 scale=1.0,
-                 act="hard_swish",
-                 feature_maps=[4, 11, 14],
-                 channel_ratio=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]):
+    def __init__(
+        self,
+        scale=1.0,
+        act="hard_swish",
+        feature_maps=[4, 11, 14],
+        channel_ratio=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    ):
         super(ESNet, self).__init__()
         self.scale = scale
         if isinstance(feature_maps, Integral):
@@ -220,20 +219,20 @@ class ESNet(nn.Layer):
         stage_repeats = [3, 7, 3]
 
         stage_out_channels = [
-            -1, 24, make_divisible(128 * scale), make_divisible(256 * scale),
-            make_divisible(512 * scale), 1024
+            -1,
+            24,
+            make_divisible(128 * scale),
+            make_divisible(256 * scale),
+            make_divisible(512 * scale),
+            1024,
         ]
 
         self._out_channels = []
         self._feature_idx = 0
         # 1. conv1
         self._conv1 = ConvBNLayer(
-            in_channels=3,
-            out_channels=stage_out_channels[1],
-            kernel_size=3,
-            stride=2,
-            padding=1,
-            act=act)
+            in_channels=3, out_channels=stage_out_channels[1], kernel_size=3, stride=2, padding=1, act=act
+        )
         self._max_pool = MaxPool2D(kernel_size=3, stride=2, padding=1)
         self._feature_idx += 1
 
@@ -243,39 +242,40 @@ class ESNet(nn.Layer):
         for stage_id, num_repeat in enumerate(stage_repeats):
             for i in range(num_repeat):
                 channels_scales = channel_ratio[arch_idx]
-                mid_c = make_divisible(
-                    int(stage_out_channels[stage_id + 2] * channels_scales),
-                    divisor=8)
+                mid_c = make_divisible(int(stage_out_channels[stage_id + 2] * channels_scales), divisor=8)
                 if i == 0:
                     block = self.add_sublayer(
-                        name=str(stage_id + 2) + '_' + str(i + 1),
+                        name=str(stage_id + 2) + "_" + str(i + 1),
                         sublayer=InvertedResidualDS(
                             in_channels=stage_out_channels[stage_id + 1],
                             mid_channels=mid_c,
                             out_channels=stage_out_channels[stage_id + 2],
                             stride=2,
-                            act=act))
+                            act=act,
+                        ),
+                    )
                 else:
                     block = self.add_sublayer(
-                        name=str(stage_id + 2) + '_' + str(i + 1),
+                        name=str(stage_id + 2) + "_" + str(i + 1),
                         sublayer=InvertedResidual(
                             in_channels=stage_out_channels[stage_id + 2],
                             mid_channels=mid_c,
                             out_channels=stage_out_channels[stage_id + 2],
                             stride=1,
-                            act=act))
+                            act=act,
+                        ),
+                    )
                 self._block_list.append(block)
                 arch_idx += 1
                 self._feature_idx += 1
-                self._update_out_channels(stage_out_channels[stage_id + 2],
-                                          self._feature_idx, self.feature_maps)
+                self._update_out_channels(stage_out_channels[stage_id + 2], self._feature_idx, self.feature_maps)
 
     def _update_out_channels(self, channel, feature_idx, feature_maps):
         if feature_idx in feature_maps:
             self._out_channels.append(channel)
 
     def forward(self, inputs):
-        y = self._conv1(inputs['image'])
+        y = self._conv1(inputs["image"])
         y = self._max_pool(y)
         outs = []
         for i, inv in enumerate(self._block_list):
