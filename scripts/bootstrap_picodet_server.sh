@@ -2,7 +2,12 @@
 
 # git clone -b main https://github.com/karimelgazar/PaddleDetection
 apt remove python3-blinker
-python -m pip install -U pip setuptools wheel blinker
+python -m pip install -U pip wheel blinker
+# Keep pkg_resources available for PaddleDetection imports.
+python -m pip install "setuptools==75.8.0"
+# Known-good combo for PicoDet export in this workspace.
+python -m pip install --force-reinstall "paddlepaddle-gpu==2.6.2" -i "https://www.paddlepaddle.org.cn/packages/stable/cu118/"
+python -m pip install --force-reinstall "numpy<2"
 python -m pip install -r requirements.txt
 nvidia-smi
 python check_setup.py
@@ -59,3 +64,19 @@ echo "Done"
 echo "Best weights: $(pwd)/$BEST_WEIGHTS"
 echo "Inference outputs: $(pwd)/output_inference"
 echo "Exported model: $(pwd)/output_export"
+cd PaddleDetection
+python tools/export_model.py -c configs/picodet/picodet_s_416_coco_haramblur_big.yml \
+              -o weights="/home/work/freelancer/PaddleDetection/output/haramblur/218.pdparams" \
+              --output_dir="/home/work/freelancer/PaddleDetection/output/haramblur_exported_onnx"
+
+# Convert exported Paddle model to ONNX (per configs/picodet/README_en.md).
+python -m pip install -U "onnx==1.16.2" -i https://pypi.org/simple
+python -m pip install -U "paddle2onnx==1.3.1" -i https://pypi.org/simple
+paddle2onnx \
+  --model_dir /home/work/freelancer/PaddleDetection/output/haramblur_exported_onnx/picodet_s_416_coco_haramblur_big/ \
+  --model_filename model.pdmodel \
+  --params_filename model.pdiparams \
+  --opset_version 14 \
+  --save_file /home/work/freelancer/PaddleDetection/output/haramblur_exported_onnx/picodet_s_416_coco_haramblur_big/model.onnx
+
+
